@@ -110,7 +110,7 @@ void main() {
       when(() => mockEventRemoteDataSource.getAllEvents()).thenThrow(
           const APIException(
               message: 'Something went wrong with the server',
-              statusCode: 500));
+              statusCode: "500"));
 
       // Act
       final result = await eventRepositoryUnderTest.getAllEvents();
