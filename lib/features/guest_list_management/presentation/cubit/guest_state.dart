@@ -14,6 +14,20 @@ class GuestInitial extends GuestState {}
 // Loading State
 class GuestLoading extends GuestState {}
 
+class GuestAdded extends GuestState {}
+
+class GuestDeleted extends GuestState {}
+
+class GuestUpdated extends GuestState {
+  final Guest newGuest;
+
+  const GuestUpdated(this.newGuest);
+
+  @override
+  List<Object?> get props => [newGuest];  
+}
+
+
 // Success State (with List<Guest>)
 class GuestLoaded extends GuestState {
   final List<Guest> guests;

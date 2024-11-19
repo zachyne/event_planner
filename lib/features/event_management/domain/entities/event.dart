@@ -9,7 +9,7 @@ class Event extends Equatable {
   final String time;
   final String location;
   final String description;
-  final List<int> guestIds;
+  final List<String> guestIds;
 
   const Event({
     required this.id,
@@ -20,6 +20,26 @@ class Event extends Equatable {
     required this.description,
     required this.guestIds,
   });
+
+  Event copyWith({
+    String? id,
+    String? title,
+    DateTime? date,
+    String? time,
+    String? location,
+    String? description,
+    List<String>? guestIds,
+  }) {
+    return Event(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      date: date ?? this.date,
+      time: time ?? this.time,
+      location: location ?? this.location,
+      description: description ?? this.description,
+      guestIds: guestIds ?? this.guestIds,
+    );
+  }
 
   @override
   List<Object?> get props => [

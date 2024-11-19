@@ -25,7 +25,7 @@ void main() {
     time: '18:00',
     location: 'Home',
     description: 'A fun birthday party',
-    guestIds: const [1, 2, 3],
+    guestIds: const ["1", "2", "3"],
   );
 
   final testEventList = [testEvent];

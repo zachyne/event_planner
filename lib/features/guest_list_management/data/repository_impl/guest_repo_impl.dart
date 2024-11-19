@@ -11,7 +11,7 @@ class GuestRepositoryImplementation implements GuestRepository {
   const GuestRepositoryImplementation(this._remoteDataSource);
 
   @override
-  Future<Either<Failure, void>> createGuest(Guest guest) async {
+  Future<Either<Failure, String>> createGuest(Guest guest) async {
     try {
       return Right(await _remoteDataSource.createGuest(guest));
     } on APIException catch (e) {
@@ -58,6 +58,19 @@ class GuestRepositoryImplementation implements GuestRepository {
   Future<Either<Failure, void>> updateGuest(Guest guest) async {
     try {
       return Right(await _remoteDataSource.updateGuest(guest));
+    } on APIException catch (e) {
+      return Left(APIFailure(message: e.message, statusCode: e.statusCode));
+    } on Exception catch(e) {
+      return Left(GeneralFailure(message: e.toString()));
+    }
+  }
+
+  // new
+
+  @override
+  Future<Either<Failure, List<Guest>>> getAllGuests() async {
+    try {
+      return Right(await _remoteDataSource.getAllGuests());
     } on APIException catch (e) {
       return Left(APIFailure(message: e.message, statusCode: e.statusCode));
     } on Exception catch(e) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:event_planner/features/event_management/domain/entities/event.dart';
@@ -11,14 +13,15 @@ import 'package:event_planner/core/errors/failure.dart';
 
 part 'event_state.dart';
 
+const String noInternetErrorMessage =
+    "Sync Failed: Changes saved on your device and will sync once you're back online.";
+
+
 class EventCubit extends Cubit<EventState> {
   final CreateEvent createEventUseCase;
   final DeleteEvent deleteEventUseCase;
   final GetAllEvents getAllEventsUseCase;
   final UpdateEvent updateEventUseCase;
-
-  // Local cache for the event list
-  List<Event> _eventsCache = [];
 
   EventCubit({
     required this.createEventUseCase,
@@ -31,74 +34,93 @@ class EventCubit extends Cubit<EventState> {
   Future<void> getAllEvents() async {
     emit(EventLoading());
 
-    final Either<Failure, List<Event>> result =
-        await getAllEventsUseCase.call();
+    try {
+      final Either<Failure, List<Event>> result = await getAllEventsUseCase
+          .call()
+          .timeout(const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException("Request timed out"));
 
-    result.fold(
-      (failure) => emit(EventError(failure.getMessage())),
-      (events) {
-        _eventsCache = events;
-        emit(EventLoaded(events: _eventsCache));
-      },
-    );
+      result.fold(
+        (failure) => emit(EventError(failure.getMessage())),
+        (events) {
+          emit(EventLoaded(events: events));
+        },
+      );
+    } on TimeoutException catch (_) {
+      emit(const EventError(
+          "There seems to be a problem with your Internet connection"));
+    }
   }
 
   // Create event and add to cache
   Future<void> createEvent(Event event) async {
+    print("Guest IDs before saving: ${event.guestIds}"); // Debug log
     emit(EventLoading());
 
-    final Either<Failure, void> result = await createEventUseCase.call(event);
+    try {
+      final Either<Failure, void> result = await createEventUseCase
+          .call(event)
+          .timeout(const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException("Request timed out"));
 
-    result.fold(
-      (failure) => emit(EventError(failure.getMessage())),
-      (_) {
-        _eventsCache.add(event);
-        emit(EventLoaded(events: _eventsCache));
-      },
-    );
+      result.fold(
+        (failure) => emit(EventError(failure.getMessage())),
+        (_) {
+          emit(EventAdded());
+        },
+      );
+    } catch (_) {
+      emit(const EventError(noInternetErrorMessage));
+    }
   }
 
   // Update an event and modify it in the cache
   Future<void> updateEvent(Event event) async {
     emit(EventLoading());
 
-    final Either<Failure, void> result = await updateEventUseCase.call(event);
+    try {
+      final Either<Failure, void> result = await updateEventUseCase
+          .call(event)
+          .timeout(const Duration(seconds: 10),
+              onTimeout: () => throw TimeoutException("Request timed out"));
 
-    result.fold(
-      (failure) => emit(EventError(failure.getMessage())),
-      (_) {
-        final index = _eventsCache.indexWhere((e) => e.id == event.id);
-        if (index != -1) {
-          _eventsCache[index] = event; // update cache
-          emit(EventLoaded(events: List.from(_eventsCache)));
-        } else {
-          emit(EventError("Expense not found in cache"));
-        }
-        // _eventsCache =
-        //     _eventsCache.map((e) => e.id == event.id ? event : e).toList();
-        // emit(EventLoaded(events: _eventsCache));
-      },
-    );
+      result.fold(
+        (failure) => emit(EventError(failure.getMessage())),
+        (_) {
+          emit(EventUpdated(event));
+        },
+      );
+    } catch (_) {
+      emit(const EventError(noInternetErrorMessage));
+    }
   }
 
   // Delete an event from the cache
-  Future<void> deleteEvent(String id) async {
+  Future<void> deleteEvent(Event event) async {
     emit(EventLoading());
 
-    final Either<Failure, void> result = await deleteEventUseCase.call(id);
+    try {
+      final Either<Failure, void> result = await deleteEventUseCase(event.id).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw TimeoutException("Request timed out"),
+      );
 
-    result.fold(
-      (failure) => emit(EventError(failure.getMessage())),
-      (_) {
-        _eventsCache.removeWhere((event) => event.id == id);
-        emit(EventLoaded(events: _eventsCache));
-      },
-    );
+      result.fold(
+        (failure) => emit(EventError(failure.getMessage())),
+        (_) {
+          emit(EventDeleted());
+        },
+      );
+    } catch (_) {
+      emit(const EventError(noInternetErrorMessage));
+    }
   }
 
-  // Helper method to map Failure to readable message
-  String _mapFailureToMessage(Failure failure) {
-    // Customize this according to your error handling strategy
-    return failure.toString();
-  }
+  
+
+  // // Helper method to map Failure to readable message
+  // String _mapFailureToMessage(Failure failure) {
+  //   // Customize this according to your error handling strategy
+  //   return failure.toString();
+  // }
 }

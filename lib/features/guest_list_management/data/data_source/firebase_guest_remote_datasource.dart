@@ -10,26 +10,26 @@ class GuestFirebaseRemoteDataSource implements GuestRemoteDataSource {
   GuestFirebaseRemoteDataSource(this._firestore);
 
   @override
-  Future<void> createGuest(Guest guest) async {
-    try {
-      final guestDocRef = _firestore.collection('guests').doc();
-      final guestModel = GuestModel(
-        id: guestDocRef.id,
-        name: guest.name,
-        contactInfo: guest.contactInfo,
-        isRSVP: guest.isRSVP,
-      );
-      await guestDocRef.set(guestModel.toMap());
-    } on FirebaseException catch (e) {
-      throw APIException(
-          message: e.message ?? 'Unknown error has occured',
-          statusCode: e.code);
-    } on APIException {
-      rethrow;
-    } catch (e) {
-      throw APIException(message: e.toString(), statusCode: '500');
-    }
+  Future<String> createGuest(Guest guest) async {
+  try {
+    final guestDocRef = _firestore.collection('guests').doc();
+    final guestModel = GuestModel(
+      id: guestDocRef.id,
+      name: guest.name,
+      contactInfo: guest.contactInfo,
+      isRSVP: guest.isRSVP,
+    );
+    await guestDocRef.set(guestModel.toMap());
+    return guestDocRef.id; // Return the ID of the newly created document
+  } on FirebaseException catch (e) {
+    throw APIException(
+      message: e.message ?? 'Unknown error has occurred',
+      statusCode: e.code,
+    );
+  } catch (e) {
+    throw APIException(message: e.toString(), statusCode: '500');
   }
+}
 
   @override
   Future<void> deleteGuest(String id) async {
@@ -69,11 +69,56 @@ class GuestFirebaseRemoteDataSource implements GuestRemoteDataSource {
     }
   }
 
-  @override
-  @override
+//   @override
+// Future<List<Guest>> getGuestsByEvent(String eventId) async {
+//   try {
+//     // Fetch event data first to get guestIds
+//     final eventSnapshot = await _firestore
+//         .collection('events')
+//         .doc(eventId)
+//         .get();
+
+//     if (!eventSnapshot.exists) {
+//       throw const APIException(
+//           message: 'Event not found', statusCode: '404');
+//     }
+
+//     final eventData = eventSnapshot.data();
+//     List<String> guestIds = List<String>.from(eventData?['guestIds'] ?? []);
+
+//     // Now fetch guests based on guestIds
+//     List<Guest> guests = [];
+//     for (String guestId in guestIds) {
+//       final guestSnapshot = await _firestore
+//           .collection('guests')
+//           .doc(guestId)
+//           .get();
+
+//       if (guestSnapshot.exists) {
+//         final guestData = guestSnapshot.data();
+//         guests.add(Guest(
+//           id: guestData?['id'],
+//           name: guestData?['name'],
+//           contactInfo: guestData?['contactInfo'],
+//           isRSVP: guestData?['isRSVP'],
+//         ));
+//       }
+//     }
+
+//     return guests;
+//   } on FirebaseException catch (e) {
+//     throw APIException(
+//         message: e.message ?? 'Unknown error occurred', statusCode: e.code);
+//   } on APIException {
+//     rethrow;
+//   } catch (e) {
+//     throw APIException(message: e.toString(), statusCode: '500');
+//   }
+// }
+@override
 Future<List<Guest>> getGuestsByEvent(String eventId) async {
   try {
-    // Fetch event data first to get guestIds
+    // Fetch event data to get guestIds
     final eventSnapshot = await _firestore
         .collection('events')
         .doc(eventId)
@@ -85,9 +130,10 @@ Future<List<Guest>> getGuestsByEvent(String eventId) async {
     }
 
     final eventData = eventSnapshot.data();
+    // Ensure guestIds is a List<String>, fallback to empty list if not found
     List<String> guestIds = List<String>.from(eventData?['guestIds'] ?? []);
 
-    // Now fetch guests based on guestIds
+    // Fetch guests based on guestIds
     List<Guest> guests = [];
     for (String guestId in guestIds) {
       final guestSnapshot = await _firestore
@@ -97,11 +143,12 @@ Future<List<Guest>> getGuestsByEvent(String eventId) async {
 
       if (guestSnapshot.exists) {
         final guestData = guestSnapshot.data();
+        // Ensure correct data types for guest fields
         guests.add(Guest(
-          id: guestData?['id'],
-          name: guestData?['name'],
-          contactInfo: guestData?['contactInfo'],
-          isRSVP: guestData?['isRSVP'],
+          id: guestData?['id'] ?? '', // Default to empty string if not found
+          name: guestData?['name'] ?? '',
+          contactInfo: guestData?['contactInfo'] ?? '',
+          isRSVP: guestData?['isRSVP'] ?? false, // Default to false if not found
         ));
       }
     }
@@ -118,6 +165,7 @@ Future<List<Guest>> getGuestsByEvent(String eventId) async {
 }
 
 
+
   @override
   Future<void> updateGuest(Guest guest) async {
     final guestData = {
@@ -128,6 +176,31 @@ Future<List<Guest>> getGuestsByEvent(String eventId) async {
     };
     try {
       await _firestore.collection('guests').doc(guest.id).update(guestData);
+    } on FirebaseException catch (e) {
+      throw APIException(
+          message: e.message ?? 'Unknown error occurred', statusCode: e.code);
+    } on APIException {
+      rethrow;
+    } catch (e) {
+      throw APIException(message: e.toString(), statusCode: '500');
+    }
+  }
+
+  // new
+
+  @override
+  Future<List<Guest>> getAllGuests() async {
+    try {
+      final snapshot = await _firestore.collection('guests').get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Guest(
+          id: data['id'],
+          name: data['name'],
+          contactInfo: data['contactInfo'],
+          isRSVP: data['isRSVP'],
+        );
+      }).toList();
     } on FirebaseException catch (e) {
       throw APIException(
           message: e.message ?? 'Unknown error occurred', statusCode: e.code);

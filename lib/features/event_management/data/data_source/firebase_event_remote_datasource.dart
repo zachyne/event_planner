@@ -51,7 +51,10 @@ class EventFirebaseRemoteDatasource implements EventRemoteDataSource {
   @override
   Future<List<Event>> getAllEvents() async {
     try {
-      final querySnapshot = await _firestore.collection('events').get();
+      final querySnapshot = await _firestore
+          .collection('events')
+          .orderBy("date", descending: true)
+          .get();
       return querySnapshot.docs.map((doc) {
         final data = doc.data();
         return Event(
@@ -61,7 +64,7 @@ class EventFirebaseRemoteDatasource implements EventRemoteDataSource {
           time: data['time'],
           location: data['location'],
           description: data['description'],
-          guestIds: List<int>.from(data['guestIds']),
+          guestIds: List<String>.from(data['guestIds']),
         );
       }).toList();
     } on FirebaseException catch (e) {
@@ -88,7 +91,7 @@ class EventFirebaseRemoteDatasource implements EventRemoteDataSource {
           time: data['time'],
           location: data['location'],
           description: data['description'],
-          guestIds: List<int>.from(data['guestIds']),
+          guestIds: List<String>.from(data['guestIds']),
         );
       }
       return null;
@@ -106,16 +109,19 @@ class EventFirebaseRemoteDatasource implements EventRemoteDataSource {
   @override
   Future<void> updateEvent(Event event) async {
     final eventModel = EventModel(
-        id: event.id,
-        title: event.title,
-        date: event.date,
-        time: event.time,
-        location: event.location,
-        description: event.description,
-        guestIds: event.guestIds,
+      id: event.id,
+      title: event.title,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      description: event.description,
+      guestIds: event.guestIds,
     );
     try {
-      await _firestore.collection('events').doc(event.id).update(eventModel.toMap());
+      await _firestore
+          .collection('events')
+          .doc(event.id)
+          .update(eventModel.toMap());
     } on FirebaseException catch (e) {
       throw APIException(
           message: e.message ?? 'Unknown error has occured',
@@ -127,5 +133,3 @@ class EventFirebaseRemoteDatasource implements EventRemoteDataSource {
     }
   }
 }
-
-

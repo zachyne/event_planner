@@ -24,6 +24,19 @@ class EventLoaded extends EventState {
   List<Object?> get props => [events];
 }
 
+class EventAdded extends EventState {}
+
+class EventDeleted extends EventState {}
+
+class EventUpdated extends EventState {
+  final Event newEvent;
+
+  const EventUpdated(this.newEvent);
+
+  @override
+  List<Object?> get props => [newEvent];  
+}
+
 // Error State (with error message)
 class EventError extends EventState {
   final String message;

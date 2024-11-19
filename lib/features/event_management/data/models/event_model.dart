@@ -16,13 +16,14 @@ class EventModel extends Event {
   // Method to create an EventModel from a Map
   factory EventModel.fromMap(Map<String, dynamic> map) {
     return EventModel(
-      id: map['id'],
+      // remove 'to String' if shows error
+      id: map['id'].toString(),
       title: map['title'],
       date: DateTime.parse(map['date']),
       time: map['time'],
       location: map['location'],
       description: map['description'],
-      guestIds: List<int>.from(map['guestIds']),
+      guestIds: List<String>.from(map['guestIds'].map((id) => id.toString())),
     );
   }
 

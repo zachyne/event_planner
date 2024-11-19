@@ -11,7 +11,7 @@ class CreateGuest {
 
   CreateGuest({required this.repository});
 
-  Future<Either<Failure, void>> call(Guest guest) async {
+  Future<Either<Failure, String>> call(Guest guest) async {
     return await repository.createGuest(guest);
   }
 }

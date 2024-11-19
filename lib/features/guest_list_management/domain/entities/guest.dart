@@ -15,6 +15,20 @@ class Guest extends Equatable {
     required this.isRSVP,
   });
 
+  Guest copyWith({
+    String? id,
+    String? name,
+    String? contactInfo,
+    bool? isRSVP,
+  }) {
+    return Guest(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      contactInfo: contactInfo ?? this.contactInfo,
+      isRSVP: isRSVP ?? this.isRSVP,
+    );
+  }
+
   @override
   List<Object?> get props => [
     id,
